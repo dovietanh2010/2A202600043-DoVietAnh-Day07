@@ -15,16 +15,12 @@ from src.embeddings import (
     OpenAIEmbedder,
     _mock_embed,
 )
+from src.chunking import DocumentStructureChunker, RecursiveChunker, SentenceChunker
 from src.models import Document
 from src.store import EmbeddingStore
 
 SAMPLE_FILES = [
-    "data/python_intro.txt",
-    "data/vector_store_notes.md",
-    "data/rag_system_design.md",
-    "data/customer_support_playbook.txt",
-    "data/chunking_experiment_report.md",
-    "data/vi_retrieval_notes.md",
+    "data/law.md"
 ]
 
 
@@ -57,7 +53,13 @@ def load_documents_from_files(file_paths: list[str]) -> list[Document]:
 
 
 def demo_llm(prompt: str) -> str:
-    """A simple mock LLM for manual RAG testing."""
+    """A simulated LLM that extracts context to answer questions."""
+    # Try to find the context block in the prompt
+    if "Context:" in prompt:
+        context_part = prompt.split("Context:")[1].split("Question:")[0].strip()
+        # Just a simple heuristic: take the first 2-3 sentences of the first chunk
+        return f"[Mô phỏng LLM] Dựa trên ngữ cảnh được cung cấp: \n\"{context_part[:500]}...\"\n\n(Lưu ý: Bạn đang dùng Mock LLM và Mock Embedding. Để trả lời chính xác, cần tích hợp OpenAI hoặc Sentence-Transformers)."
+    
     preview = prompt[:400].replace("\n", " ")
     return f"[DEMO LLM] Generated answer from prompt preview: {preview}..."
 
@@ -100,10 +102,23 @@ def run_manual_demo(question: str | None = None, sample_files: list[str] | None 
 
     print(f"\nEmbedding backend: {getattr(embedder, '_backend_name', embedder.__class__.__name__)}")
 
-    store = EmbeddingStore(collection_name="manual_test_store", embedding_fn=embedder)
-    store.add_documents(docs)
+    # Initialize Chunker
+    chunker = DocumentStructureChunker(chunk_size=1000)
+    all_chunks = []
+    for doc in docs:
+        chunks = chunker.chunk(doc.content)
+        for i, chunk_text in enumerate(chunks):
+            chunk_doc = Document(
+                id=f"{doc.id}_chunk_{i}",
+                content=chunk_text,
+                metadata={**doc.metadata, "chunk_index": i}
+            )
+            all_chunks.append(chunk_doc)
 
-    print(f"\nStored {store.get_collection_size()} documents in EmbeddingStore")
+    store = EmbeddingStore(collection_name="manual_test_store", embedding_fn=embedder)
+    store.add_documents(all_chunks)
+
+    print(f"\nStored {store.get_collection_size()} chunks from {len(docs)} documents in EmbeddingStore")
     print("\n=== EmbeddingStore Search Test ===")
     print(f"Query: {query}")
     search_results = store.search(query, top_k=3)

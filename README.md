@@ -164,8 +164,9 @@ PY
 ### Cần implement
 - `SentenceChunker` — chia theo ranh giới câu
 - `RecursiveChunker` — thử từng separator theo thứ tự
+- `DocumentStructureChunker` (Hybrid) — phân cấp theo cấu trúc tài liệu kết hợp cửa sổ trượt (sliding window) để xử lý các phần quá dài
 - `compute_similarity` — cosine similarity
-- `ChunkingStrategyComparator` — so sánh 3 chiến lược
+- `ChunkingStrategyComparator` — so sánh các chiến lược
 - `EmbeddingStore` — wrapper quanh vector store (5 methods)
 - `KnowledgeBaseAgent` — RAG pattern agent
 
@@ -204,6 +205,7 @@ Khi chạy benchmark, đừng chỉ hỏi **"code có chạy không?"** mà hãy
 5. **Data Strategy Impact**
    - Bộ tài liệu nhóm chọn có phù hợp với benchmark queries không?
    - Strategy chunking / metadata của bạn có hợp với domain không?
+   - Một chiến lược lai (ví dụ: `DocumentStructureChunker`) có giúp cân bằng giữa độ dài chunk và tính toàn vẹn ngữ cảnh không?
 
 > Xem `docs/EVALUATION.md` nếu bạn muốn một checklist chi tiết hơn cho phần này.
 
